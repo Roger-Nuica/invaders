@@ -1,0 +1,13 @@
+{
+  "name": "cotcodac-cosmic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cotcodac Cosmic: un shooter spatial cu găini, făcut pentru telefon.",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/build.mjs && python3 -m http.server 8081 -d dist",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
