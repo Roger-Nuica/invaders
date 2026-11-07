@@ -4,7 +4,7 @@
 // Anchor of the hen (its "centre" in the game) is design point (280, 250).
 
 export const HEN_W = 560;
-export const HEN_H = 480;
+export const HEN_H = 504;
 export const HEN_AX = 280;
 export const HEN_AY = 250;
 /** Where the wing joins the body (left wing; the right one is mirrored). */

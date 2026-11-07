@@ -50,7 +50,7 @@ export function drawHen(ctx, set, x, y, flap, sc = 1, extra) {
   const { body, wing, pivotDx, pivotDy } = set;
   for (const s of [1, -1]) {
     ctx.save();
-    ctx.translate(x + s * -pivotDx * sc, y + pivotDy * sc);
+    ctx.translate(x + s * pivotDx * sc, y + pivotDy * sc);
     ctx.scale(s * sc, sc);
     ctx.rotate(flap);
     ctx.drawImage(wing.c, -wing.ax, -wing.ay, wing.w, wing.h);
