@@ -2,7 +2,7 @@
 // list below makes it play offline once it has loaded once. Pages and scripts
 // are fetched fresh when there is a network (a new deploy shows up on the next
 // visit); the cache is the fallback offline. Bump CACHE when the file list changes.
-const CACHE = 'cotcodac-cosmic-v1';
+const CACHE = 'porcii-cosmici-v1';
 const ASSETS = [
   './',
   './index.html',
@@ -25,7 +25,7 @@ const ASSETS = [
   './src/audio.js',
   './src/render/renderer.js',
   './src/render/sprites.js',
-  './src/render/hen.js',
+  './src/render/pig.js',
   './src/render/background.js',
   './src/render/fx.js',
 ];

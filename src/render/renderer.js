@@ -1,12 +1,37 @@
 // Draws one frame: backdrop (screen space), then the world (360 x H units),
 // then the HUD. `view` = { cw, ch, dpr, scale, ox, oy } in css px.
 
-import { createSprites, blit, drawHen, HEN_K, BOSS_K } from './sprites.js';
+import { createSprites, blit, drawPig, PIG_K, BOSS_K } from './sprites.js';
 import { createBackground } from './background.js';
 import { createFx } from './fx.js';
-import { drawPupil, EYES_X, HEN_AX, HEN_AY } from './hen.js';
+import { drawPupil, EYES, PROP, PIG_AX, PIG_AY } from './pig.js';
 import { clamp } from '../math.js';
 import { WEAPONS } from '../weapons.js';
+
+
+/** The spinning propeller on top of a pig's hat (drawn live; the blades flatten as they turn). */
+function propeller(c, x, y, k, sc, chef, phase) {
+  const hx = x + (PROP.x - PIG_AX) * k * sc;
+  const hy = y + ((chef ? PROP.chefY : PROP.beanieY) - PIG_AY) * k * sc;
+  const L = (chef ? 92 : 84) * k * sc;
+  const w = 13 * k * sc;
+  c.save();
+  c.globalAlpha = 0.28;
+  c.fillStyle = '#fff';
+  c.beginPath();
+  c.ellipse(hx, hy, L, w * 0.9, 0, 0, Math.PI * 2);
+  c.fill();
+  c.globalAlpha = 1;
+  c.fillStyle = '#ffe34a';
+  c.strokeStyle = '#a07a0a';
+  c.lineWidth = Math.max(0.6, 2 * k);
+  const a = Math.abs(Math.cos(phase));
+  c.beginPath();
+  c.ellipse(hx, hy, Math.max(L * a, w), w, 0, 0, Math.PI * 2);
+  c.fill();
+  c.stroke();
+  c.restore();
+}
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
@@ -115,19 +140,20 @@ export function createRenderer(canvas) {
     const x = b.x + (Math.random() - 0.5) * shake;
     const y = b.y + (Math.random() - 0.5) * shake;
     const flap = Math.sin(t * (4 + b.phase)) * 0.14;
-    drawHen(c, set, x, y, flap, 1, (cc) => {
+    drawPig(c, set, x, y, flap, 1, (cc) => {
       const lx = clamp((g.ship.x - b.x) / 160, -1, 1);
       const ly = clamp((g.ship.y - b.y) / 400, 0, 1);
       cc.save();
-      cc.translate(x - HEN_AX * BOSS_K, y - HEN_AY * BOSS_K);
+      cc.translate(x - PIG_AX * BOSS_K, y - PIG_AY * BOSS_K);
       cc.scale(BOSS_K, BOSS_K);
-      for (const ex of EYES_X) drawPupil(cc, ex, lx, ly);
+      for (const [ex, ey] of EYES) drawPupil(cc, ex, ey, lx, ly);
       cc.restore();
+      propeller(cc, x, y, BOSS_K, 1, true, t * 16);
     });
     if (b.flash > 0) {
       c.globalCompositeOperation = 'lighter';
       c.globalAlpha = 0.45;
-      drawHen(c, set, x, y, flap, 1);
+      drawPig(c, set, x, y, flap, 1);
       c.globalAlpha = 1;
       c.globalCompositeOperation = 'source-over';
     }
@@ -149,9 +175,9 @@ export function createRenderer(canvas) {
     // boss health
     const b = g.boss;
     if (b && (g.phase === 'boss' || g.phase === 'bossIntro' || g.phase === 'bossDying')) {
-      const w = 300;
-      const x = (g.W - w) / 2;
-      const y = 80;
+      const w = 138;
+      const x = 124;
+      const y = 17;
       c.fillStyle = 'rgba(20,6,30,.7)';
       c.beginPath();
       c.roundRect(x - 2, y - 2, w + 4, 16, 8);
@@ -193,13 +219,14 @@ export function createRenderer(canvas) {
 
       fx.drawSplats(c, S2);
       drawBoss(c, g, S2, t);
-      // hens
+      // pigs
       for (const e of g.enemies) {
         if (e.hp <= 0) continue;
-        const set = S2.hen[e.color];
+        const set = S2.pig[e.color];
         const flap = Math.sin(t * 9 + e.id * 1.7) * 0.3;
         const bob = Math.sin(t * 3 + e.id) * 1.2;
-        drawHen(c, set, e.x, e.y + bob, flap, e.flash > 0 ? 1.1 : 1);
+        const sc = e.flash > 0 ? 1.1 : 1;
+        drawPig(c, set, e.x, e.y + bob, flap, sc, (cc) => propeller(cc, e.x, e.y + bob, PIG_K, sc, false, t * 20 + e.id * 1.3));
         if (e.flash > 0) {
           c.globalCompositeOperation = 'lighter';
           c.globalAlpha = 0.5;
@@ -218,11 +245,11 @@ export function createRenderer(canvas) {
         c.globalCompositeOperation = 'source-over';
         blit(c, s, d.x, d.y + Math.sin(d.t * 5) * 1.5, Math.sin(d.t * 3) * 0.3, d.type === 'gift' ? 1 + 0.06 * Math.sin(d.t * 9) : 0.95);
       }
-      // eggs
-      for (const e of g.eggs) {
+      // blobs
+      for (const e of g.blobs) {
         if (e.kind === 'big') {
           const near = clamp((e.y - (e.splitY - 70)) / 70, 0, 1);
-          blit(c, S2.eggBig, e.x, e.y, Math.sin(e.spin) * 0.3, 1 + near * 0.12 * Math.sin(g.t * 30));
+          blit(c, S2.blobBig, e.x, e.y, Math.sin(e.spin) * 0.3, 1 + near * 0.12 * Math.sin(g.t * 30));
           if (near > 0) {
             c.globalCompositeOperation = 'lighter';
             c.globalAlpha = near * 0.7;
@@ -230,7 +257,7 @@ export function createRenderer(canvas) {
             c.globalAlpha = 1;
             c.globalCompositeOperation = 'source-over';
           }
-        } else blit(c, S2.egg, e.x, e.y, Math.sin(e.spin) * 0.35, 1);
+        } else blit(c, S2.blob, e.x, e.y, Math.sin(e.spin) * 0.35, 1);
       }
       // bullets
       c.globalCompositeOperation = 'lighter';
@@ -249,7 +276,7 @@ export function createRenderer(canvas) {
       }
       g.events.length = 0;
     },
-    /** Title-screen scene: the giant hen and the ship. */
+    /** Title-screen scene: the giant pig and the ship. */
     menu(view, t) {
       const S2 = ensureSprites(view);
       const c = ctx;
@@ -258,12 +285,13 @@ export function createRenderer(canvas) {
       c.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.ox * view.dpr, view.oy * view.dpr);
       const H = view.H;
       void H;
-      drawHen(c, S2.boss[0], 180 + Math.sin(t) * 14, H * 0.42 + Math.sin(t * 1.7) * 6, Math.sin(t * 5) * 0.16, 0.78, (cc) => {
+      drawPig(c, S2.boss[0], 180 + Math.sin(t) * 14, H * 0.42 + Math.sin(t * 1.7) * 6, Math.sin(t * 5) * 0.16, 0.78, (cc) => {
         cc.save();
-        cc.translate(180 + Math.sin(t) * 14 - HEN_AX * BOSS_K * 0.78, H * 0.42 + Math.sin(t * 1.7) * 6 - HEN_AY * BOSS_K * 0.78);
+        cc.translate(180 + Math.sin(t) * 14 - PIG_AX * BOSS_K * 0.78, H * 0.42 + Math.sin(t * 1.7) * 6 - PIG_AY * BOSS_K * 0.78);
         cc.scale(BOSS_K * 0.78, BOSS_K * 0.78);
-        for (const ex of EYES_X) drawPupil(cc, ex, Math.sin(t * 0.9), 0.5);
+        for (const [ex, ey] of EYES) drawPupil(cc, ex, ey, Math.sin(t * 0.9), 0.5);
         cc.restore();
+        propeller(cc, 180 + Math.sin(t) * 14, H * 0.42 + Math.sin(t * 1.7) * 6, BOSS_K, 0.78, true, t * 16);
       });
     },
     weaponColor: (w) => WEAPONS[w].color,

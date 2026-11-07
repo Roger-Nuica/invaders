@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeWave, enemyPos, WAVE_COUNT } from '../src/waves.js';
 
-test('every wave has hens with unique ids, positive health and a colour', () => {
+test('every wave has pigs with unique ids, positive health and a colour', () => {
   for (let i = 0; i < WAVE_COUNT; i++) {
     const w = makeWave(i);
     assert.ok(w.enemies.length >= 15);
@@ -11,16 +11,16 @@ test('every wave has hens with unique ids, positive health and a colour', () => 
   }
 });
 
-test('waves get harder: more eggs, faster eggs, more aimed shots', () => {
+test('waves get harder: more blobs, faster blobs, more aimed shots', () => {
   const ws = [0, 1, 2, 3].map(makeWave);
   for (let i = 1; i < ws.length; i++) {
-    assert.ok(ws[i].eggRate > ws[i - 1].eggRate);
-    assert.ok(ws[i].eggSpeed > ws[i - 1].eggSpeed);
+    assert.ok(ws[i].blobRate > ws[i - 1].blobRate);
+    assert.ok(ws[i].blobSpeed > ws[i - 1].blobSpeed);
     assert.ok(ws[i].aimed > ws[i - 1].aimed);
   }
 });
 
-test('hens fly in from above the screen and are on screen once ready', () => {
+test('pigs fly in from above the screen and are on screen once ready', () => {
   for (let i = 0; i < WAVE_COUNT; i++) {
     for (const e of makeWave(i).enemies) {
       assert.ok(enemyPos(e, e.delay).y < -50);
@@ -34,7 +34,7 @@ test('hens fly in from above the screen and are on screen once ready', () => {
   }
 });
 
-test('hens in a wave never sit on top of each other once settled', () => {
+test('pigs in a wave never sit on top of each other once settled', () => {
   for (let i = 0; i < WAVE_COUNT; i++) {
     const w = makeWave(i);
     for (const t of [4, 9, 15]) {

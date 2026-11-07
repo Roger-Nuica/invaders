@@ -2,11 +2,11 @@
 // at the current pixel density (`px` = device pixels per world unit), then just
 // blitted every frame, which keeps the game smooth on phones.
 
-import { drawHenBody, drawHenWing, HEN_W, HEN_H, HEN_AX, HEN_AY, WING_PIVOT, SWEATERS } from './hen.js';
+import { drawPigBody, drawPigWing, PIG_W, PIG_H, PIG_AX, PIG_AY, WING_PIVOT, OUTFITS } from './pig.js';
 
-export const HEN_K = 0.105; // world units per design unit, ordinary hens
-export const BOSS_K = 0.46; // the giant hen
-export const WING_SCALE = 0.7; // ordinary hens have shorter wings so they fit in formation
+export const PIG_K = 0.105; // world units per design unit, ordinary pigs
+export const BOSS_K = 0.46; // the giant pig
+export const WING_SCALE = 0.7; // ordinary pigs have shorter wings so they fit in formation
 
 /** Bake a sprite: `w` x `h` world units, anchor (ax, ay) in world units. */
 function bake(px, w, h, ax, ay, draw) {
@@ -30,23 +30,23 @@ export function blit(ctx, s, x, y, rot = 0, sc = 1) {
   } else ctx.drawImage(s.c, x - s.ax * sc, y - s.ay * sc, s.w * sc, s.h * sc);
 }
 
-function henSet(px, k, sweater, look, wingScale) {
-  const body = bake(px, HEN_W * k, HEN_H * k, HEN_AX * k, HEN_AY * k, (ctx) => {
+function pigSet(px, k, outfit, look, wingScale) {
+  const body = bake(px, PIG_W * k, PIG_H * k, PIG_AX * k, PIG_AY * k, (ctx) => {
     ctx.scale(k, k);
-    drawHenBody(ctx, sweater, look);
+    drawPigBody(ctx, outfit, look);
   });
   const ox = -5;
-  const oy = 95;
-  const wing = bake(px, 235 * k * wingScale, 255 * k * wingScale, (WING_PIVOT.x - ox) * k * wingScale, (WING_PIVOT.y - oy) * k * wingScale, (ctx) => {
+  const oy = 215;
+  const wing = bake(px, 235 * k * wingScale, 200 * k * wingScale, (WING_PIVOT.x - ox) * k * wingScale, (WING_PIVOT.y - oy) * k * wingScale, (ctx) => {
     ctx.scale(k * wingScale, k * wingScale);
     ctx.translate(WING_PIVOT.x - ox, WING_PIVOT.y - oy);
-    drawHenWing(ctx);
+    drawPigWing(ctx, outfit);
   });
-  return { body, wing, k, wingScale, pivotDx: (WING_PIVOT.x - HEN_AX) * k, pivotDy: (WING_PIVOT.y - HEN_AY) * k };
+  return { body, wing, k, wingScale, pivotDx: (WING_PIVOT.x - PIG_AX) * k, pivotDy: (WING_PIVOT.y - PIG_AY) * k };
 }
 
-/** Draw one hen set (wings behind, body in front). */
-export function drawHen(ctx, set, x, y, flap, sc = 1, extra) {
+/** Draw one pig set (wings behind, body in front). */
+export function drawPig(ctx, set, x, y, flap, sc = 1, extra) {
   const { body, wing, pivotDx, pivotDy } = set;
   for (const s of [1, -1]) {
     ctx.save();
@@ -58,14 +58,6 @@ export function drawHen(ctx, set, x, y, flap, sc = 1, extra) {
   }
   blit(ctx, body, x, y, 0, sc);
   if (extra) extra(ctx);
-}
-
-function eggPath(ctx, w, h) {
-  ctx.beginPath();
-  ctx.moveTo(0, -h / 2);
-  ctx.bezierCurveTo(w * 0.62, -h * 0.38, w * 0.58, h * 0.5, 0, h / 2);
-  ctx.bezierCurveTo(-w * 0.58, h * 0.5, -w * 0.62, -h * 0.38, 0, -h / 2);
-  ctx.closePath();
 }
 
 function drawShip(ctx) {
@@ -171,11 +163,11 @@ function glowOrb(ctx, r, rgb) {
 }
 
 export function createSprites(px) {
-  const S = { px, hen: {}, boss: [] };
+  const S = { px, pig: {}, boss: [] };
 
-  for (const name of Object.keys(SWEATERS)) S.hen[name] = henSet(px, HEN_K, name, {}, WING_SCALE);
+  for (const name of Object.keys(OUTFITS)) S.pig[name] = pigSet(px, PIG_K, name, {}, WING_SCALE);
   // boss: three brow intensities (calm -> furious); the pupils are drawn live
-  for (const anger of [1, 1.35, 1.7]) S.boss.push(henSet(px, BOSS_K, 'red', { anger, pupils: false }, 1));
+  for (const anger of [0.8, 1.4, 2]) S.boss.push(pigSet(px, BOSS_K, 'red', { anger, pupils: false, chef: true }, 1));
 
   S.ship = bake(px, 64, 64, 32, 33, (ctx) => {
     ctx.translate(32, 33);
@@ -221,96 +213,136 @@ export function createSprites(px) {
     ctx.fill();
   });
 
-  // eggs
-  S.egg = bake(px, 18, 22, 9, 11, (ctx) => {
-    ctx.translate(9, 11);
-    eggPath(ctx, 14, 18);
-    const g = ctx.createRadialGradient(-2, -3, 1, 0, 0, 11);
-    g.addColorStop(0, '#ffffff');
-    g.addColorStop(0.6, '#fff2d6');
-    g.addColorStop(1, '#e0b878');
+  // mud balls the pigs throw
+  S.blob = bake(px, 20, 22, 10, 11, (ctx) => {
+    ctx.translate(10, 11);
+    const g = ctx.createRadialGradient(-3, -4, 1, 0, 0, 10);
+    g.addColorStop(0, '#b98a5a');
+    g.addColorStop(0.55, '#7a4a24');
+    g.addColorStop(1, '#3f2210');
     ctx.fillStyle = g;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(120,80,30,.7)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.strokeStyle = '#2a1408';
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.ellipse(-2.6, -3.5, 1.7, 3, 0.3, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  S.eggBig = bake(px, 40, 48, 20, 24, (ctx) => {
-    ctx.translate(20, 24);
-    eggPath(ctx, 30, 38);
-    const g = ctx.createRadialGradient(-5, -7, 2, 0, 0, 22);
-    g.addColorStop(0, '#fff7d0');
-    g.addColorStop(0.6, '#ffc94a');
-    g.addColorStop(1, '#c4741a');
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.strokeStyle = '#7a3f0c';
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(160,70,10,.55)';
-    for (const [x, y, r] of [[-6, -2, 3], [5, 6, 3.6], [3, -10, 2.4], [-3, 10, 2.6]]) {
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+    for (let i = 0; i <= 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const r = (i % 2 ? 8.6 : 7.4) + (i === 3 ? 1.6 : 0);
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r * 1.08);
     }
-    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,230,190,.55)';
     ctx.beginPath();
-    ctx.ellipse(-6, -8, 3, 6, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(-3, -4, 2.6, 1.8, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3f2210';
+    ctx.beginPath();
+    ctx.arc(7, -8, 1.8, 0, Math.PI * 2);
+    ctx.arc(-8, 7, 1.5, 0, Math.PI * 2);
     ctx.fill();
   });
-  S.splat = bake(px, 44, 18, 22, 9, (ctx) => {
+  // the big one: a rotten tomato that bursts into three
+  S.blobBig = bake(px, 44, 46, 22, 24, (ctx) => {
+    ctx.translate(22, 25);
+    const g = ctx.createRadialGradient(-6, -7, 2, 0, 0, 22);
+    g.addColorStop(0, '#ff9a8a');
+    g.addColorStop(0.5, '#e8281c');
+    g.addColorStop(1, '#8f0c12');
+    ctx.fillStyle = g;
+    ctx.strokeStyle = '#5a0710';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 19, 17, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#2f9e3c';
+    ctx.strokeStyle = '#17591f';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * 5.5, -14 + Math.sin(a) * 2.8, 7, 2.6, a, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#17591f';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -14);
+    ctx.lineTo(1, -21);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.beginPath();
+    ctx.ellipse(-8, -6, 4, 6, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    // a grumpy little face, because everything here is funny
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-6, 2, 3.8, 0, Math.PI * 2);
+    ctx.arc(6, 2, 3.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#220';
+    ctx.beginPath();
+    ctx.arc(-5.5, 3, 1.8, 0, Math.PI * 2);
+    ctx.arc(6.5, 3, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#220';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-10, -2);
+    ctx.lineTo(-3, 0);
+    ctx.moveTo(10, -2);
+    ctx.lineTo(3, 0);
+    ctx.stroke();
+  });
+  const splat = (px2, c1, c2) => bake(px2, 44, 18, 22, 9, (ctx) => {
     ctx.translate(22, 9);
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.fillStyle = c1;
     ctx.beginPath();
     ctx.ellipse(0, 1, 20, 6, 0, 0, Math.PI * 2);
     ctx.ellipse(-12, 3, 7, 4, 0.2, 0, Math.PI * 2);
     ctx.ellipse(13, 2, 6, 3.5, -0.2, 0, Math.PI * 2);
     ctx.fill();
-    const g = ctx.createRadialGradient(-1, -1, 1, 0, 0, 7);
-    g.addColorStop(0, '#ffe46a');
-    g.addColorStop(1, '#f59a1a');
-    ctx.fillStyle = g;
+    ctx.fillStyle = c2;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 7, 4.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(-2, -1, 8, 3.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(9, 0, 3, 2, 0, 0, Math.PI * 2);
     ctx.fill();
   });
+  S.splat = splat(px, 'rgba(96,58,28,.95)', 'rgba(150,100,56,.9)');
+  S.splatRed = splat(px, 'rgba(200,24,24,.95)', 'rgba(255,110,90,.9)');
 
   // pickups
-  S.drumstick = bake(px, 30, 30, 15, 15, (ctx) => {
-    ctx.translate(15, 15);
-    ctx.rotate(-0.7);
-    ctx.fillStyle = '#fbf3e3';
-    ctx.strokeStyle = '#b9a98a';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(2, -2.5, 13, 5, 2.5);
-    ctx.fill();
-    ctx.stroke();
-    for (const dy of [-3.5, 3.5]) {
+  S.sausage = bake(px, 34, 30, 17, 15, (ctx) => {
+    ctx.translate(17, 15);
+    ctx.rotate(-0.35);
+    ctx.strokeStyle = '#5a1f0e';
+    ctx.lineWidth = 1.4;
+    for (const [dx, dy] of [[0, 8], [0, -1], [0, -10]]) {
+      const g = ctx.createLinearGradient(0, dy - 5, 0, dy + 5);
+      g.addColorStop(0, '#f08a5a');
+      g.addColorStop(0.5, '#c8431c');
+      g.addColorStop(1, '#7c220d');
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(15.5, dy * 0.6, 3.4, 0, Math.PI * 2);
+      ctx.roundRect(-14 + dx, dy - 5.2, 28, 10.4, 5.2);
       ctx.fill();
       ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.4)';
+      ctx.beginPath();
+      ctx.ellipse(-4 + dx, dy - 2.4, 7, 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
-    const g = ctx.createRadialGradient(-5, -4, 1, -3, 0, 13);
-    g.addColorStop(0, '#f6b25a');
-    g.addColorStop(0.6, '#c8671c');
-    g.addColorStop(1, '#7c3410');
-    ctx.fillStyle = g;
-    ctx.strokeStyle = '#5a2208';
-    ctx.lineWidth = 1.2;
+    // the twisted ends of the links
+    ctx.strokeStyle = '#a8431c';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(-4, 0, 11, 8.5, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(14, 3.2);
+    ctx.lineTo(17, 1);
+    ctx.moveTo(-14, -5.8);
+    ctx.lineTo(-17, -7);
     ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.4)';
-    ctx.beginPath();
-    ctx.ellipse(-7, -3.5, 4, 2, -0.4, 0, Math.PI * 2);
-    ctx.fill();
   });
   S.gift = bake(px, 34, 34, 17, 17, (ctx) => {
     ctx.translate(17, 17);

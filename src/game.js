@@ -3,15 +3,15 @@
 
 import { mulberry32, clamp, circlesHit } from './math.js';
 import { fire, cooldownOf, nextWeapon, MAX_POWER } from './weapons.js';
-import { makeWave, enemyPos, WAVE_COUNT, HEN_R } from './waves.js';
-import { createBoss, stepBoss, bossCircles, makeEgg, BOSS_INTRO } from './boss.js';
+import { makeWave, enemyPos, WAVE_COUNT, PIG_R } from './waves.js';
+import { createBoss, stepBoss, bossCircles, makeBlob, BOSS_INTRO } from './boss.js';
 import { rollDrop, DROP_VALUES } from './drops.js';
 
 export const W = 360;
 export const SHIP_R = 6;
 export const START_LIVES = 3;
 export const START_BOMBS = 3;
-const MAX_EGGS = 70;
+const MAX_BLOBS = 70;
 
 /** opts: { seed, H, god, start: 'wave' | 'boss', wave } */
 export function createGame(opts = {}) {
@@ -19,7 +19,7 @@ export function createGame(opts = {}) {
   const g = {
     W, H, rng: mulberry32(opts.seed ?? 1), t: 0,
     phase: 'intro', phaseT: 0, wave: opts.wave ?? 0, waveData: null, wt: 0,
-    enemies: [], bullets: [], eggs: [], drops: [], boss: null, events: [],
+    enemies: [], bullets: [], blobs: [], drops: [], boss: null, events: [],
     score: 0, lives: START_LIVES, bombs: START_BOMBS, power: 1, weapon: 'ion',
     cool: 0, bombCd: 0, sinceGift: 0, kills: 0, god: !!opts.god, over: null, endT: 0,
     target: { x: W / 2, y: H - 120 },
@@ -38,13 +38,13 @@ function enter(g, phase) {
   if (phase === 'intro') g.events.push({ type: 'banner', text: `Valul ${g.wave + 1}`, sub: 'Pregătiți-vă!' });
   if (phase === 'wave') {
     g.waveData = makeWave(g.wave);
-    g.enemies = g.waveData.enemies.map((e) => ({ ...e, x: 180, y: -100, ready: false, flash: 0, maxHp: e.hp, r: HEN_R }));
+    g.enemies = g.waveData.enemies.map((e) => ({ ...e, x: 180, y: -100, ready: false, flash: 0, maxHp: e.hp, r: PIG_R }));
     g.wt = 0;
   }
   if (phase === 'clear') g.events.push({ type: 'banner', text: 'Val învins!', sub: '' });
   if (phase === 'bossIntro') {
     g.boss = createBoss();
-    g.events.push({ type: 'banner', text: 'ATENȚIE!', sub: 'Găina Uriașă se apropie', boss: true });
+    g.events.push({ type: 'banner', text: 'ATENȚIE!', sub: 'Porcul Uriaș se apropie', boss: true });
     g.events.push({ type: 'bossWarn' });
   }
 }
@@ -66,7 +66,7 @@ export function useBomb(g) {
   g.bombCd = 1;
   g.ship.inv = Math.max(g.ship.inv, 1.2);
   g.events.push({ type: 'bomb', x: g.ship.x, y: g.ship.y });
-  g.eggs.length = 0;
+  g.blobs.length = 0;
   for (const e of g.enemies) damageEnemy(g, e, 8);
   if (g.boss && g.phase === 'boss') damageBoss(g, 45);
   return true;
@@ -80,7 +80,7 @@ function damageEnemy(g, e, dmg) {
   g.kills++;
   g.score += 100;
   g.sinceGift++;
-  g.events.push({ type: 'henDie', x: e.x, y: e.y, color: e.color });
+  g.events.push({ type: 'pigDie', x: e.x, y: e.y, color: e.color });
   g.events.push({ type: 'score', x: e.x, y: e.y, v: 100 });
   const d = rollDrop(g.rng, g.sinceGift, g.power);
   if (d) {
@@ -98,7 +98,7 @@ function damageBoss(g, dmg) {
   if (b.hp <= 0) {
     b.hp = 0;
     b.dead = true;
-    g.eggs.length = 0;
+    g.blobs.length = 0;
     g.bullets.length = 0;
     g.score += 5000;
     g.events.push({ type: 'bossDie', x: b.x, y: b.y });
@@ -135,7 +135,7 @@ function stepShip(g, dt) {
       s.x = W / 2;
       s.y = g.H + 50;
       s.inv = 2.6;
-      g.eggs = g.eggs.filter((e) => Math.hypot(e.x - W / 2, e.y - (g.H - 110)) > 130);
+      g.blobs = g.blobs.filter((e) => Math.hypot(e.x - W / 2, e.y - (g.H - 110)) > 130);
     }
     return;
   }
@@ -161,18 +161,18 @@ function stepFire(g, dt) {
   g.events.push({ type: 'shoot', weapon: g.weapon });
 }
 
-function eggFromHen(g, e) {
+function blobFromPig(g, e) {
   const wv = g.waveData;
   const aimedShot = g.ship.alive && g.rng() < wv.aimed;
   const a = aimedShot ? Math.atan2(g.ship.y - e.y, g.ship.x - e.x) : Math.PI / 2 + (g.rng() - 0.5) * 0.18;
-  g.eggs.push(makeEgg(e.x, e.y + 14, a, wv.eggSpeed * (aimedShot ? 1.05 : 1)));
+  g.blobs.push(makeBlob(e.x, e.y + 14, a, wv.blobSpeed * (aimedShot ? 1.05 : 1)));
 }
 
 function stepEnemies(g, dt) {
   g.wt += dt;
   const aliveReady = g.enemies.filter((e) => e.hp > 0).length || 1;
-  // keep the total egg rate steady as the wave thins out a bit
-  const rate = g.waveData.eggRate * (1 + 0.8 * (1 - aliveReady / g.waveData.enemies.length));
+  // keep the total blob rate steady as the wave thins out a bit
+  const rate = g.waveData.blobRate * (1 + 0.8 * (1 - aliveReady / g.waveData.enemies.length));
   for (const e of g.enemies) {
     if (e.hp <= 0) continue;
     const p = enemyPos(e, g.wt);
@@ -180,29 +180,29 @@ function stepEnemies(g, dt) {
     e.y = p.y;
     e.ready = p.ready;
     e.flash = Math.max(0, e.flash - dt);
-    if (p.ready && g.eggs.length < MAX_EGGS && g.rng() < rate * dt) eggFromHen(g, e);
+    if (p.ready && g.blobs.length < MAX_BLOBS && g.rng() < rate * dt) blobFromPig(g, e);
   }
 }
 
-function stepEggs(g, dt) {
+function stepBlobs(g, dt) {
   const out = [];
-  for (const e of g.eggs) {
+  for (const e of g.blobs) {
     e.x += e.vx * dt;
     e.y += e.vy * dt;
     e.spin += dt * (e.kind === 'big' ? 2 : 4);
     if (e.kind === 'big' && e.y >= e.splitY) {
-      g.events.push({ type: 'eggSplit', x: e.x, y: e.y });
-      for (const d of [-0.5, 0, 0.5]) out.push(makeEgg(e.x, e.y, Math.PI / 2 + d, 170));
+      g.events.push({ type: 'blobSplit', x: e.x, y: e.y });
+      for (const d of [-0.5, 0, 0.5]) out.push(makeBlob(e.x, e.y, Math.PI / 2 + d, 170));
       continue;
     }
     if (e.y > g.H - 8) {
-      g.events.push({ type: 'eggSplat', x: e.x, y: g.H - 6, big: e.kind === 'big' });
+      g.events.push({ type: 'blobSplat', x: e.x, y: g.H - 6, big: e.kind === 'big' });
       continue;
     }
     if (e.x < -30 || e.x > W + 30 || e.y < -40) continue;
     out.push(e);
   }
-  g.eggs = out;
+  g.blobs = out;
 }
 
 function stepBullets(g, dt) {
@@ -254,7 +254,7 @@ function stepDrops(g, dt) {
         g.power = Math.min(MAX_POWER, g.power + 1);
         g.score += 150;
       } else if (d.type === 'bomb') g.bombs = Math.min(9, g.bombs + 1);
-      else g.score += DROP_VALUES.drumstick;
+      else g.score += DROP_VALUES.sausage;
       g.events.push({ type: 'pickup', kind: d.type, x: d.x, y: d.y });
       continue;
     }
@@ -267,7 +267,7 @@ function shipCollisions(g) {
   const s = g.ship;
   if (!s.alive || s.inv > 0 || g.god) return;
   let hit = false;
-  for (const e of g.eggs) if (circlesHit(e.x, e.y, e.r - 1, s.x, s.y, SHIP_R)) { hit = true; break; }
+  for (const e of g.blobs) if (circlesHit(e.x, e.y, e.r - 1, s.x, s.y, SHIP_R)) { hit = true; break; }
   if (!hit) for (const e of g.enemies) if (e.hp > 0 && circlesHit(e.x, e.y, e.r - 3, s.x, s.y, SHIP_R)) { hit = true; break; }
   if (!hit && g.boss && g.phase === 'boss') for (const c of bossCircles(g.boss)) if (circlesHit(c.x, c.y, c.r - 6, s.x, s.y, SHIP_R)) { hit = true; break; }
   if (hit) killShip(g);
@@ -296,7 +296,7 @@ export function step(g, dt) {
     case 'bossIntro':
     case 'boss': {
       const r = stepBoss(g.boss, dt, { shipX: g.ship.x, shipY: g.ship.y, W, rng: g.rng });
-      for (const e of r.eggs) if (g.eggs.length < MAX_EGGS * 2) g.eggs.push(e);
+      for (const e of r.blobs) if (g.blobs.length < MAX_BLOBS * 2) g.blobs.push(e);
       for (const ev of r.events) g.events.push(ev);
       if (g.phase === 'bossIntro' && g.phaseT > BOSS_INTRO) enter(g, 'boss');
       break;
@@ -310,7 +310,7 @@ export function step(g, dt) {
   }
 
   stepBullets(g, dt);
-  stepEggs(g, dt);
+  stepBlobs(g, dt);
   stepDrops(g, dt);
   shipCollisions(g);
 

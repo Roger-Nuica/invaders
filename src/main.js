@@ -150,7 +150,7 @@ function finish(result) {
     } catch { /* ignore */ }
   }
   $('endTitle').textContent = result === 'won' ? 'Victorie!' : 'Game over';
-  $('endSub').textContent = result === 'won' ? 'Găina Uriașă a fost învinsă. Galaxia e salvată!' : 'Găinile au câștigat... de data asta.';
+  $('endSub').textContent = result === 'won' ? 'Porcul Uriaș a fost învins. Galaxia e salvată!' : 'Porcii au câștigat... de data asta.';
   $('endScore').textContent = `Scor: ${g.score}`;
   $('endBest').textContent = `Cel mai bun: ${best}`;
   setTimeout(() => ui === 'playing' && setUi('over'), result === 'won' ? 1200 : 600);

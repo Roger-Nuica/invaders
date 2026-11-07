@@ -1,6 +1,6 @@
-// The giant hen. Three phases (by remaining health), each with its own egg
+// The giant pig. Three phases (by remaining health), each with its own blob
 // patterns. Between two patterns the boss rests, which is when you can hit it
-// freely. Eggs are returned by stepBoss; the game owns them afterwards.
+// freely. Blobs are returned by stepBoss; the game owns them afterwards.
 
 import { easeOut } from './math.js';
 
@@ -34,14 +34,14 @@ export const bossCircles = (b) => [
   { x: b.x, y: b.y - 62, r: 40 },
 ];
 
-export const makeEgg = (x, y, angle, speed, kind = 'egg') => ({
+export const makeBlob = (x, y, angle, speed, kind = 'blob') => ({
   x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
   r: kind === 'big' ? 14 : 7, kind, splitY: 0, spin: 0,
 });
 
-/** Advance the boss by dt. ctx = { shipX, shipY, W, rng }. Returns { eggs, events }. */
+/** Advance the boss by dt. ctx = { shipX, shipY, W, rng }. Returns { blobs, events }. */
 export function stepBoss(b, dt, ctx) {
-  const eggs = [];
+  const blobs = [];
   const events = [];
   b.t += dt;
   b.flash = Math.max(0, b.flash - dt);
@@ -49,7 +49,7 @@ export function stepBoss(b, dt, ctx) {
   b.y = intro ? -220 + 360 * easeOut(b.t / BOSS_INTRO) : 140;
   const amp = [0, 30, 45, 55][b.phase];
   b.x = ctx.W / 2 + (intro ? 0 : amp * Math.sin((b.t - BOSS_INTRO) * (0.5 + 0.2 * b.phase)));
-  if (intro) return { eggs, events };
+  if (intro) return { blobs, events };
 
   const ph = phaseOf(b);
   if (ph !== b.phase) {
@@ -71,14 +71,14 @@ export function stepBoss(b, dt, ctx) {
       b.volley = 0;
       b.angle = ctx.rng() * 6;
     }
-    return { eggs, events };
+    return { blobs, events };
   }
 
   const ox = b.x;
   const oy = b.y + 78;
   b.patT += dt;
   b.acc += dt;
-  const emit = (a, speed, kind) => eggs.push(makeEgg(ox, oy, a, speed, kind));
+  const emit = (a, speed, kind) => blobs.push(makeBlob(ox, oy, a, speed, kind));
   const toShip = () => Math.atan2(ctx.shipY - oy, ctx.shipX - ox);
   const every = (step, fn) => {
     while (b.acc >= step) {
@@ -89,7 +89,7 @@ export function stepBoss(b, dt, ctx) {
 
   switch (b.pat) {
     case 'fan': {
-      // three volleys of seven eggs, each volley offset by half a gap
+      // three volleys of seven blobs, each volley offset by half a gap
       while (b.volley < 3 && b.patT >= b.volley * 0.5) {
         for (let i = -3; i <= 3; i++) emit(HALF_PI + i * 0.28 + (b.volley % 2 ? 0.14 : 0), 150);
         b.volley++;
@@ -112,13 +112,13 @@ export function stepBoss(b, dt, ctx) {
       break;
     }
     case 'rain':
-      every(0.17, () => eggs.push(makeEgg(20 + ctx.rng() * (ctx.W - 40), -10, HALF_PI + (ctx.rng() - 0.5) * 0.2, 165 + ctx.rng() * 40)));
+      every(0.17, () => blobs.push(makeBlob(20 + ctx.rng() * (ctx.W - 40), -10, HALF_PI + (ctx.rng() - 0.5) * 0.2, 165 + ctx.rng() * 40)));
       break;
     case 'splitter':
       while (b.volley < 2 && b.patT >= b.volley * 1.1) {
-        const e = makeEgg(ox, oy, toShip(), 105, 'big');
+        const e = makeBlob(ox, oy, toShip(), 105, 'big');
         e.splitY = 240 + ctx.rng() * 90;
-        eggs.push(e);
+        blobs.push(e);
         b.volley++;
       }
       break;
@@ -134,5 +134,5 @@ export function stepBoss(b, dt, ctx) {
     b.pat = null;
     b.rest = REST[b.phase];
   }
-  return { eggs, events };
+  return { blobs, events };
 }

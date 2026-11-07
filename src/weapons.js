@@ -1,7 +1,7 @@
 // The three weapons. `power` (1..MAX_POWER) is the shared upgrade level the
-// player raises by catching gifts dropped by the hens.
+// player raises by catching gifts dropped by the pigs.
 //  - Ion:     a fan of glowing bolts; more power = a wider fan.
-//  - Neutron: thick plasma bolts that pierce through whole rows of hens.
+//  - Neutron: thick plasma bolts that pierce through whole rows of pigs.
 //  - Vulcan:  a very fast, narrow stream of tracer rounds.
 
 export const MAX_POWER = 6;

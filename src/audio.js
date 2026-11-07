@@ -1,5 +1,5 @@
 // All sound is synthesised with WebAudio (no files to download): weapon pews,
-// hen squawks, egg splats, explosions, jingles and a small looping backing track.
+// pig squawks, blob splats, explosions, jingles and a small looping backing track.
 
 export function createAudio() {
   let ac = null;
@@ -85,16 +85,18 @@ export function createAudio() {
     hit() {
       if (throttle('hit', 0.04)) noise({ dur: 0.03, vol: 0.05, f0: 5000, f1: 2000, type: 'highpass' });
     },
-    henDie() {
-      if (!throttle('hen', 0.03)) return;
-      tone({ f0: 620, f1: 240, dur: 0.16, type: 'square', vol: 0.06 });
-      tone({ f0: 520, f1: 300, dur: 0.12, type: 'square', vol: 0.04, delay: 0.07 });
-      noise({ dur: 0.12, vol: 0.07, f0: 3000, f1: 400 });
+    pigDie() {
+      if (!throttle('pig', 0.03)) return;
+      // a nasal "oink": two quick buzzy notes, then a snort
+      const base = 190 + Math.random() * 90;
+      tone({ f0: base * 1.5, f1: base * 0.9, dur: 0.1, type: 'sawtooth', vol: 0.06 });
+      tone({ f0: base * 1.2, f1: base * 0.7, dur: 0.14, type: 'square', vol: 0.045, delay: 0.09 });
+      noise({ dur: 0.1, vol: 0.06, f0: 2600, f1: 500, delay: 0.16, type: 'bandpass' });
     },
-    eggSplat() {
+    blobSplat() {
       if (throttle('splat', 0.05)) noise({ dur: 0.14, vol: 0.12, f0: 900, f1: 160 });
     },
-    eggSplit() {
+    blobSplit() {
       tone({ f0: 300, f1: 700, dur: 0.12, type: 'triangle', vol: 0.06 });
     },
     shipDie() {
@@ -132,7 +134,7 @@ export function createAudio() {
     },
   };
 
-  // backing track: bass + arpeggio, calmer for waves, tenser for the boss
+  // backing track: bass + arpblobio, calmer for waves, tenser for the boss
   const SCALE = [0, 3, 7, 10, 12, 10, 7, 3];
   const BASS = [0, 0, -2, -2, -4, -4, -2, -2];
   function schedule() {

@@ -1,5 +1,5 @@
 // Deep-space backdrop: a baked nebula, three parallax star layers and a slowly
-// drifting ringed planet. Drawn in screen space so it fills any phone shape.
+// drifting cheese moon. Drawn in screen space so it fills any phone shape.
 
 import { mulberry32 } from '../math.js';
 
@@ -50,24 +50,25 @@ export function createBackground() {
       if (!nebula || nw !== w || nh !== h) bakeNebula(w, h);
       ctx.drawImage(nebula, 0, 0, w, h);
 
-      // distant planet with a ring
+      // a drifting moon made of cheese (obviously)
       const py = ((t * 3) % (h + 260)) - 130;
       const px = w * 0.8;
       ctx.save();
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.92;
       const pg = ctx.createRadialGradient(px - 14, py - 14, 4, px, py, 46);
-      pg.addColorStop(0, '#ffb870');
-      pg.addColorStop(0.6, '#b8456c');
-      pg.addColorStop(1, '#3a1450');
+      pg.addColorStop(0, '#fff2a8');
+      pg.addColorStop(0.65, '#ffcf3f');
+      pg.addColorStop(1, '#b8801a');
       ctx.fillStyle = pg;
       ctx.beginPath();
       ctx.arc(px, py, 40, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,210,150,.55)';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.ellipse(px, py, 70, 14, -0.4, 0.1, Math.PI * 2 - 0.1);
-      ctx.stroke();
+      ctx.fillStyle = 'rgba(170,110,15,.55)';
+      for (const [dx, dy, r] of [[-14, -10, 9], [12, -16, 6], [14, 10, 10], [-8, 18, 5], [-24, 6, 4]]) {
+        ctx.beginPath();
+        ctx.arc(px + dx, py + dy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
 
       for (const s of stars) {

@@ -12,7 +12,7 @@ function startWave(g) {
   assert.equal(g.phase, 'wave');
 }
 
-test('a new game starts with an intro and then the first wave of hens', () => {
+test('a new game starts with an intro and then the first wave of pigs', () => {
   const g = createGame({ seed: 1 });
   assert.equal(g.phase, 'intro');
   assert.equal(g.lives, 3);
@@ -31,7 +31,7 @@ test('the ship follows the target and stays inside its play area', () => {
   assert.ok(Math.abs(g.ship.x - 100) < 2 && Math.abs(g.ship.y - 600) < 2);
 });
 
-test('firing creates bullets and bullets kill hens, scoring points', () => {
+test('firing creates bullets and bullets kill pigs, scoring points', () => {
   const g = createGame({ god: true });
   startWave(g);
   run(g, 3);
@@ -42,10 +42,10 @@ test('firing creates bullets and bullets kill hens, scoring points', () => {
   const before = g.score;
   step(g, DT);
   assert.ok(g.score >= before + 100);
-  assert.ok(g.events.some((ev) => ev.type === 'henDie'));
+  assert.ok(g.events.some((ev) => ev.type === 'pigDie'));
 });
 
-test('a neutron bolt pierces through two hens but hits each only once', () => {
+test('a neutron bolt pierces through two pigs but hits each only once', () => {
   const g = createGame({ god: true });
   startWave(g);
   run(g, 3);
@@ -64,12 +64,12 @@ test('a neutron bolt pierces through two hens but hits each only once', () => {
   assert.equal(g.bullets.length, 1);
 });
 
-test('an egg hitting the ship costs a life and drops power; the ship respawns invulnerable', () => {
+test('an blob hitting the ship costs a life and drops power; the ship respawns invulnerable', () => {
   const g = createGame();
   run(g, 3);
   g.power = 4;
   g.ship.inv = 0;
-  g.eggs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'egg', splitY: 0, spin: 0 });
+  g.blobs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'blob', splitY: 0, spin: 0 });
   step(g, DT);
   assert.equal(g.lives, 2);
   assert.equal(g.power, 3);
@@ -79,10 +79,10 @@ test('an egg hitting the ship costs a life and drops power; the ship respawns in
   assert.ok(g.ship.inv > 0);
 });
 
-test('god mode and post-respawn invulnerability ignore eggs', () => {
+test('god mode and post-respawn invulnerability ignore blobs', () => {
   const g = createGame({ god: true });
   run(g, 3);
-  g.eggs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'egg', splitY: 0, spin: 0 });
+  g.blobs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'blob', splitY: 0, spin: 0 });
   step(g, DT);
   assert.equal(g.lives, 3);
 });
@@ -92,20 +92,20 @@ test('losing the last life ends the game as lost', () => {
   run(g, 3);
   g.lives = 1;
   g.ship.inv = 0;
-  g.eggs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'egg', splitY: 0, spin: 0 });
+  g.blobs.push({ x: g.ship.x, y: g.ship.y, vx: 0, vy: 0, r: 7, kind: 'blob', splitY: 0, spin: 0 });
   run(g, 3);
   assert.equal(g.over, 'lost');
 });
 
-test('a bomb wipes eggs, hurts hens and is limited', () => {
+test('a bomb wipes blobs, hurts pigs and is limited', () => {
   const g = createGame({ god: true });
   startWave(g);
   run(g, 3);
   for (const e of g.enemies) e.hp = 100;
-  g.eggs.push({ x: 50, y: 50, vx: 0, vy: 0, r: 7, kind: 'egg', splitY: 0, spin: 0 });
+  g.blobs.push({ x: 50, y: 50, vx: 0, vy: 0, r: 7, kind: 'blob', splitY: 0, spin: 0 });
   assert.ok(useBomb(g));
   assert.ok(g.enemies.every((e) => e.hp === 92));
-  assert.equal(g.eggs.length, 0);
+  assert.equal(g.blobs.length, 0);
   assert.equal(g.bombs, 2);
   assert.equal(useBomb(g), false, 'cooldown');
   run(g, 1.1);
@@ -114,7 +114,7 @@ test('a bomb wipes eggs, hurts hens and is limited', () => {
   assert.equal(useBomb(g), false);
 });
 
-test('clearing every hen advances to the next wave, and after the last comes the boss', () => {
+test('clearing every pig advances to the next wave, and after the last comes the boss', () => {
   const g = createGame({ god: true, wave: 3 });
   startWave(g);
   run(g, 2);
@@ -143,14 +143,14 @@ test('the boss is immune during the intro, then killable; killing it wins the ga
   assert.equal(g.over, 'won');
 });
 
-test('boss eggs fall in many directions and big eggs split', () => {
+test('boss blobs fall in many directions and big blobs split', () => {
   const g = createGame({ god: true, start: 'boss' });
   g.boss.maxHp = 1e7;
   g.boss.hp = 1e6;
   let split = false;
   for (let t = 0; t < 40; t += DT) {
     step(g, DT);
-    if (g.events.some((e) => e.type === 'eggSplit')) split = true;
+    if (g.events.some((e) => e.type === 'blobSplit')) split = true;
     g.events.length = 0;
   }
   assert.ok(split);
@@ -181,5 +181,5 @@ test('the simulation is deterministic for a given seed', () => {
   run(a, 20);
   run(b, 20);
   assert.equal(a.score, b.score);
-  assert.equal(a.eggs.length, b.eggs.length);
+  assert.equal(a.blobs.length, b.blobs.length);
 });
